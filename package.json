@@ -1,0 +1,61 @@
+{
+  "name": "openclaw-magnus",
+  "version": "0.1.3",
+  "type": "module",
+  "description": "OpenClaw Magnus platform chat channel via WebSocket",
+  "license": "MIT",
+  "author": "wjsoj <wjs@wjsphy.top>",
+  "homepage": "https://github.com/wjsoj/openclaw-magnus#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wjsoj/openclaw-magnus.git"
+  },
+  "bugs": {
+    "url": "https://github.com/wjsoj/openclaw-magnus/issues"
+  },
+  "files": [
+    "index.ts",
+    "src",
+    "openclaw.plugin.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "openclaw",
+    "magnus",
+    "chat",
+    "websocket",
+    "ai",
+    "claude"
+  ],
+  "openclaw": {
+    "extensions": [
+      "./index.ts"
+    ],
+    "channel": {
+      "id": "magnus",
+      "label": "Magnus",
+      "selectionLabel": "Magnus Chat",
+      "docsPath": "/channels/magnus",
+      "docsLabel": "magnus",
+      "blurb": "Magnus platform chat channel via WebSocket",
+      "order": 70
+    },
+    "install": {
+      "npmSpec": "openclaw-magnus",
+      "localPath": ".",
+      "defaultChoice": "npm"
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
+  },
+  "peerDependencies": {
+    "openclaw": ">=2026.2.9"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  }
+}

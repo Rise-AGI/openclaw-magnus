@@ -1,0 +1,9 @@
+{
+  "id": "openclaw-magnus",
+  "channels": ["magnus"],
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}
