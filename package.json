@@ -1,19 +1,23 @@
 {
   "name": "openclaw-magnus",
-  "version": "0.1.3",
+  "version": "0.1.8",
   "type": "module",
+  "bin": {
+    "openclaw-magnus": "bin/install.sh"
+  },
   "description": "OpenClaw Magnus platform chat channel via WebSocket",
   "license": "MIT",
   "author": "wjsoj <wjs@wjsphy.top>",
-  "homepage": "https://github.com/wjsoj/openclaw-magnus#readme",
+  "homepage": "https://github.com/RISE-AGI/openclaw-magnus#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/wjsoj/openclaw-magnus.git"
+    "url": "git+https://github.com/RISE-AGI/openclaw-magnus.git"
   },
   "bugs": {
-    "url": "https://github.com/wjsoj/openclaw-magnus/issues"
+    "url": "https://github.com/RISE-AGI/openclaw-magnus/issues"
   },
   "files": [
+    "bin",
     "index.ts",
     "src",
     "openclaw.plugin.json",
@@ -55,7 +59,11 @@
   "peerDependencies": {
     "openclaw": ">=2026.2.9"
   },
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "publish:all": "npm publish --access public && npm publish --access public --prefix packages/tools"
   }
 }

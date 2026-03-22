@@ -12,17 +12,16 @@ export type CreateMagnusReplyDispatcherParams = {
   wsClient: MagnusWsClient;
 };
 
-export function createMagnusReplyDispatcher(params: CreateMagnusReplyDispatcherParams) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type MagnusReplyDispatcherResult = { dispatcher: any; replyOptions: any; markDispatchIdle: () => void };
+
+export function createMagnusReplyDispatcher(params: CreateMagnusReplyDispatcherParams): MagnusReplyDispatcherResult {
   const core = getMagnusRuntime();
   const { cfg, agentId, runtime, replyTo, accountId, wsClient } = params;
 
   const prefixContext = createReplyPrefixContext({ cfg, agentId });
 
-  const textChunkLimit = core.channel.text.resolveTextChunkLimit({
-    cfg,
-    channel: "magnus",
-    defaultLimit: 4000,
-  });
+  const textChunkLimit = core.channel.text.resolveTextChunkLimit(cfg, "magnus", accountId, { fallbackLimit: 4000 });
   const chunkMode = core.channel.text.resolveChunkMode(cfg, "magnus");
 
   const { dispatcher, replyOptions, markDispatchIdle } =

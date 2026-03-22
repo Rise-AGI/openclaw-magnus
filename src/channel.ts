@@ -15,18 +15,18 @@ const PLUGIN_META = {
   order: 70,
 } as const;
 
-function buildWsUrl(magnusUrl: string, appId: string, appSecret: string): string {
+function buildWsUrl(magnusUrl: string, appSecret: string): string {
   const wsBase = magnusUrl.replace(/^http/, "ws");
-  return `${wsBase}/ws/chat?app_id=${encodeURIComponent(appId)}&app_secret=${encodeURIComponent(appSecret)}`;
+  return `${wsBase}/ws/chat?app_secret=${encodeURIComponent(appSecret)}`;
 }
 
-async function resolveMagnusAccount({
+function resolveMagnusAccount({
   cfg,
   accountId,
 }: {
   cfg: ClawdbotConfig;
   accountId: string;
-}): Promise<ResolvedMagnusAccount> {
+}): ResolvedMagnusAccount {
   const magnusCfg = cfg.channels?.magnus as MagnusConfig | undefined;
   const isDefault = accountId === DEFAULT_ACCOUNT_ID;
 
@@ -35,7 +35,6 @@ async function resolveMagnusAccount({
 
   if (isDefault) {
     accountCfg = {
-      appId: magnusCfg?.appId || "",
       appSecret: magnusCfg?.appSecret || "",
       magnusUrl: magnusCfg?.magnusUrl || "",
       name: magnusCfg?.name,
@@ -45,13 +44,6 @@ async function resolveMagnusAccount({
   } else {
     accountCfg = magnusCfg?.accounts?.[accountId];
     enabled = accountCfg?.enabled ?? true;
-  }
-
-  if (!accountCfg?.appId) {
-    throw new Error(
-      `缺少 App ID 配置。\n` +
-        `请配置: openclaw config set channels.magnus.appId "bot_xxxx"`,
-    );
   }
 
   if (!accountCfg?.appSecret) {
@@ -75,17 +67,16 @@ async function resolveMagnusAccount({
     enabled,
     configured: true,
     name: accountCfg.name,
-    appId: accountCfg.appId,
     appSecret: accountCfg.appSecret,
     magnusUrl,
-    wsUrl: buildWsUrl(magnusUrl, accountCfg.appId, accountCfg.appSecret),
+    wsUrl: buildWsUrl(magnusUrl, accountCfg.appSecret),
   };
 }
 
 function listMagnusAccountIds(cfg: ClawdbotConfig): string[] {
   const magnusCfg = cfg.channels?.magnus as MagnusConfig | undefined;
 
-  if (magnusCfg?.appId) {
+  if (magnusCfg?.appSecret) {
     return [DEFAULT_ACCOUNT_ID];
   }
 
@@ -124,7 +115,7 @@ export const magnusPlugin: ChannelPlugin<ResolvedMagnusAccount> = {
   config: {
     listAccountIds: (cfg) => listMagnusAccountIds(cfg),
 
-    resolveAccount: (cfg, accountId) => resolveMagnusAccount({ cfg, accountId }),
+    resolveAccount: (cfg, accountId) => resolveMagnusAccount({ cfg, accountId: accountId ?? DEFAULT_ACCOUNT_ID }),
 
     defaultAccountId: (cfg) => {
       const ids = listMagnusAccountIds(cfg);
@@ -248,10 +239,7 @@ export const magnusPlugin: ChannelPlugin<ResolvedMagnusAccount> = {
   },
 
   messaging: {
-    normalizeTarget: (target) => {
-      // Magnus uses conversation IDs directly
-      return { type: "channel", id: target };
-    },
+    normalizeTarget: (target) => target,
 
     targetResolver: {
       looksLikeId: (id) => id.length >= 16 && /^[0-9a-f]+$/.test(id),
@@ -292,18 +280,17 @@ export const magnusPlugin: ChannelPlugin<ResolvedMagnusAccount> = {
       port: snapshot.port ?? null,
     }),
 
-    probeAccount: async ({ cfg, accountId }) => {
+    probeAccount: async ({ account }) => {
+      const acc = account as ResolvedMagnusAccount;
       try {
-        const account = await resolveMagnusAccount({ cfg, accountId });
-        // 尝试 HTTP 探测 Magnus 服务是否可达
-        const resp = await fetch(`${account.magnusUrl}/api/users/self?app_id=${encodeURIComponent(account.appId)}&app_secret=${encodeURIComponent(account.appSecret)}`);
+        const resp = await fetch(`${acc.magnusUrl}/api/users/self?app_secret=${encodeURIComponent(acc.appSecret)}`);
         if (resp.ok) {
-          const data = await resp.json();
+          const data = await resp.json() as { id: string };
           return { ok: true, botUserId: data.id };
         }
         return { ok: false, error: `HTTP ${resp.status}` };
       } catch (err: any) {
-        return { ok: false, error: err.message };
+        return { ok: false, error: String(err.message) };
       }
     },
 
@@ -323,7 +310,7 @@ export const magnusPlugin: ChannelPlugin<ResolvedMagnusAccount> = {
   gateway: {
     startAccount: async (ctx) => {
       const { cfg, accountId, abortSignal, setStatus, log } = ctx;
-      const account = await resolveMagnusAccount({ cfg, accountId });
+      const account = ctx.account as ResolvedMagnusAccount;
 
       log?.info(`Starting Magnus account: ${accountId}`);
       log?.info(`Magnus URL: ${account.magnusUrl}`);
@@ -331,10 +318,10 @@ export const magnusPlugin: ChannelPlugin<ResolvedMagnusAccount> = {
       // 获取 bot 自身 user_id，用于过滤自消息回显
       try {
         const resp = await fetch(
-          `${account.magnusUrl}/api/users/self?app_id=${encodeURIComponent(account.appId)}&app_secret=${encodeURIComponent(account.appSecret)}`,
+          `${account.magnusUrl}/api/users/self?app_secret=${encodeURIComponent(account.appSecret)}`,
         );
         if (resp.ok) {
-          const data = await resp.json();
+          const data = await resp.json() as { id: string };
           account.botUserId = data.id;
           log?.info(`Bot user ID: ${account.botUserId}`);
         } else {
@@ -364,6 +351,7 @@ export const magnusPlugin: ChannelPlugin<ResolvedMagnusAccount> = {
             log?.info(`Magnus account ${accountId} connected`);
           },
           onDisconnect: () => {
+            setStatus({ accountId, running: false });
             log?.warn(`Magnus account ${accountId} disconnected, will reconnect`);
           },
           log: (msg) => log?.info(msg),
@@ -373,27 +361,29 @@ export const magnusPlugin: ChannelPlugin<ResolvedMagnusAccount> = {
       });
 
       registerWsClient(accountId, wsClient);
-      const { stop } = wsClient.start();
+      wsClient.start();
       setStatus({ accountId, running: true });
 
-      return {
-        async stop() {
-          stop();
-          unregisterWsClient(accountId);
-          setStatus({ accountId, running: false });
-        },
-      };
+      // 保持 alive 直到 abortSignal 触发（框架停止账户时触发）
+      await new Promise<void>((resolve) => {
+        abortSignal.addEventListener("abort", () => resolve(), { once: true });
+      });
+
+      unregisterWsClient(accountId);
+      setStatus({ accountId, running: false });
     },
   },
 
   outbound: {
-    async sendText({ cfg, to, text, accountId }) {
+    deliveryMode: "gateway",
+
+    async sendText({ to, text, accountId }) {
       const { getWsClient } = await import("./ws-client.js");
-      const wsClient = getWsClient(accountId);
+      const wsClient = getWsClient(accountId ?? DEFAULT_ACCOUNT_ID);
       if (!wsClient) {
         throw new Error(`magnus[${accountId}]: no active connection`);
       }
-      wsClient.sendMessage(to.id, text);
+      wsClient.sendMessage(to, text);
       return {
         channel: "magnus",
         messageId: "",

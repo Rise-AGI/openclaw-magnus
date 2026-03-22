@@ -5,10 +5,9 @@ export type ResolvedMagnusAccount = {
   enabled: boolean;
   configured: boolean;
   name?: string;
-  appId: string;
   appSecret: string;
   magnusUrl: string;
-  wsUrl: string;       // ws(s)://host/ws/chat?app_id=...&app_secret=...
+  wsUrl: string;       // ws(s)://host/ws/chat?app_secret=...
   botUserId?: string;  // 启动时从 GET /api/users/self 获取，用于过滤自消息
 };
 
