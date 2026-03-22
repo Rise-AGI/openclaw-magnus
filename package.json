@@ -1,9 +1,9 @@
 {
   "name": "openclaw-magnus",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "type": "module",
   "bin": {
-    "openclaw-magnus": "bin/install.sh"
+    "openclaw-magnus": "bin/install.mjs"
   },
   "description": "OpenClaw Magnus platform chat channel via WebSocket",
   "license": "MIT",
@@ -51,6 +51,9 @@
       "defaultChoice": "npm"
     }
   },
+  "dependencies": {
+    "@clack/prompts": "^1.0.0"
+  },
   "devDependencies": {
     "@types/node": "^20.10.0",
     "tsx": "^4.7.0",
@@ -59,11 +62,7 @@
   "peerDependencies": {
     "openclaw": ">=2026.2.9"
   },
-  "workspaces": [
-    "packages/*"
-  ],
   "scripts": {
-    "typecheck": "tsc --noEmit",
-    "publish:all": "npm publish --access public && npm publish --access public --prefix packages/tools"
+    "typecheck": "tsc --noEmit"
   }
 }

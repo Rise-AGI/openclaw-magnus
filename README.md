@@ -84,29 +84,10 @@ The plugin establishes a persistent WebSocket connection to Magnus (`/ws/chat?ap
 
 ## Repository Structure
 
-This is a monorepo containing two published packages:
-
-| Package | Description |
-| ------- | ----------- |
-| [`openclaw-magnus`](https://www.npmjs.com/package/openclaw-magnus) | Core channel plugin loaded by OpenClaw |
-| [`openclaw-magnus-tools`](https://www.npmjs.com/package/openclaw-magnus-tools) | Interactive install wizard (`packages/tools/`) |
-
 ```
 openclaw-magnus/
-├── src/               # Plugin source (channel, ws-client, bot, types)
-├── packages/
-│   └── tools/         # openclaw-magnus-tools install wizard
-├── bin/               # Shell entry points (install.sh / install.cmd)
-└── index.ts           # Plugin entry point
+├── src/          # Plugin source (channel, ws-client, bot, types)
+├── bin/
+│   └── install.mjs   # Interactive install wizard
+└── index.ts      # Plugin entry point
 ```
-
-**Publishing:**
-
-```bash
-# Publish both packages
-npm publish --access public
-npm publish --access public --prefix packages/tools
-```
-
-> [!NOTE]
-> `openclaw-magnus-tools` is split into a separate package because OpenClaw scans plugin directories for `child_process` usage. Keeping the wizard in a separate package avoids false-positive security warnings.
